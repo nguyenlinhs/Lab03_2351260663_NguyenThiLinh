@@ -1,0 +1,6 @@
+Chi_so,DTW_Lab2,HMM_Lab3,Nhan_xet
+Accuracy,100.0%,100.0%,HMM mô hình hóa phân bố xác suất tốt hơn
+So_mau_train,6 mau/lop,6 mau/lop,HMM học tham số từ toàn bộ 6 mẫu; DTW so từng template
+Thoi_gian_train,0.0880s,0.2970s,DTW chỉ lưu template; HMM lặp EM Baum-Welch
+Thoi_gian_test_trial,413.82ms,6.42ms,HMM tính Forward/Viterbi nhanh gấp nhiều lần DTW O(N*M)
+Kha_nang_giai_thich,Warping path truc tiep,Viterbi state path,HMM thể hiện thời lượng frame tại mỗi trạng thái âm học

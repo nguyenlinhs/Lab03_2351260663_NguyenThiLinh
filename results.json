@@ -1,0 +1,75 @@
+{
+  "student": {
+    "name": "Nguyễn Thị Linh",
+    "id": "2351260663",
+    "class": "65TTNT"
+  },
+  "hmm_clean_accuracy": 1.0,
+  "dtw_clean_accuracy": 1.0,
+  "dtw_train_time_sec": 0.08803749084472656,
+  "hmm_train_time_sec": 0.2969999313354492,
+  "dtw_test_latency_ms": 413.81661891937256,
+  "hmm_test_latency_ms": 6.421208381652832,
+  "e1_states": {
+    "3": {
+      "accuracy": 1.0,
+      "avg_train_ll": -46.426431398629624
+    },
+    "5": {
+      "accuracy": 1.0,
+      "avg_train_ll": -40.50045569517879
+    },
+    "7": {
+      "accuracy": 1.0,
+      "avg_train_ll": -37.02805672162503
+    }
+  },
+  "e2_mfcc_13_acc": 1.0,
+  "e2_mfcc_39_acc": 1.0,
+  "e3_diag_acc": 1.0,
+  "e3_full_acc": 1.0,
+  "e5_mismatch_spk2_acc": 1.0,
+  "e5_mismatch_noisy_acc": 0.6,
+  "reject_threshold_theta": -54.59556843937125,
+  "score_table_demo": [
+    {
+      "file": "mo_07.wav",
+      "true_label": "mo",
+      "prediction": "mo",
+      "scores": {
+        "mo": -2930.4190819231126,
+        "dong": -4304.283535278119,
+        "len": -4264.327365794385,
+        "xuong": -4782.7891173993075,
+        "dung": -4361.414503650644
+      },
+      "margin_top1_top2": 1333.908283871272
+    },
+    {
+      "file": "dong_07.wav",
+      "true_label": "dong",
+      "prediction": "dong",
+      "scores": {
+        "mo": -3847.6574604564353,
+        "dong": -2594.881369499775,
+        "len": -4152.391566771919,
+        "xuong": -4022.7533247172687,
+        "dung": -3765.3430231624884
+      },
+      "margin_top1_top2": 1170.4616536627136
+    },
+    {
+      "file": "len_07.wav",
+      "true_label": "len",
+      "prediction": "len",
+      "scores": {
+        "mo": -4173.0045980234345,
+        "dong": -4555.111046680304,
+        "len": -2503.6817735074906,
+        "xuong": -4483.50588774924,
+        "dung": -3946.4674889143967
+      },
+      "margin_top1_top2": 1442.785715406906
+    }
+  ]
+}
