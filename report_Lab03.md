@@ -20,7 +20,7 @@ Lab 3 đánh dấu bước chuyển quan trọng trong công nghệ nhận dạn
 
 Mục tiêu chính bao gồm:
 1. Nắm vững bản chất toán học của HMM $\lambda = (A, B, \pi)$, giả thiết Markov bậc 1 và giả thiết độc lập quan sát có điều kiện.
-2. Xây dựng vector đặc trưng âm học 39 chiều kết hợp giữa đặc trưng phổ tĩnh 13 MFCC và đặc trưng động học thời gian (13 $\Delta$-MFCC và 13 $\Delta^2$-MFCC) cùng chuẩn hóa CMVN.
+2. Xây dựng vector đặc trưng âm học 39 chiều kết hợp giữa đặc trưng phổ tĩnh 13 MFCC và đặc trưng động học thời gian (13 Δ-MFCC và 13 Δ²-MFCC) cùng chuẩn hóa CMVN.
 3. Cấu hình mô hình HMM Trái - Sang - Phải (Left-to-Right topology), hiểu rõ nguyên lý phân bố phát xạ Gaussian đa biến với ma trận hiệp phương sai đường chéo (`diag`).
 4. Huấn luyện 5 mô hình Whole-word HMM cho 5 khẩu lệnh tiếng Việt (`mở`, `đóng`, `lên`, `xuống`, `dừng`) bằng thuật toán Baum-Welch (EM) thông qua thư viện `hmmlearn`.
 5. Thực hiện nhận dạng theo quy tắc Maximum Likelihood (Forward Algorithm) và phân tích căn chỉnh ngữ âm bằng giải mã Viterbi (Trellis Alignment).
@@ -81,7 +81,7 @@ $$
 c_t = [c_{t, 0}, c_{t, 1}, \dots, c_{t, 12}]^T \in \mathbb{R}^{13}
 $$
 
-Đặc trưng vận tốc ($\Delta$) và gia tốc ($\Delta^2$) được xấp xỉ qua sai phân bậc 1 và bậc 2 (hoặc hồi quy qua $M$ frame):
+Đặc trưng vận tốc (Δ) và gia tốc (Δ²) được xấp xỉ qua sai phân bậc 1 và bậc 2 (hoặc hồi quy qua $M$ frame):
 
 $$
 \Delta c_t \approx c_{t+1} - c_{t-1}
@@ -221,13 +221,13 @@ Biểu đồ căn chỉnh trạng thái Viterbi [fig2_viterbi_alignment_mo.png](
 ### 4.3. Bảng Điểm Acoustic Log-Likelihood trên Tập Test Thực nghiệm
 Dưới đây là bảng điểm số $\log P(X \mid \lambda_w)$ của 3 mẫu test ngẫu nhiên khi được đánh giá bởi cả 5 mô hình:
 
-| Mẫu kiểm thử | Nhãn thực | Model `mo` | Model `dong` | Model `len` | Model `xuong` | Model `dung` | Dự đoán | Top-1 Margin ($\Delta$) |
+| Mẫu kiểm thử | Nhãn thực | Model `mo` | Model `dong` | Model `len` | Model `xuong` | Model `dung` | Dự đoán | Top-1 Margin (Δ) |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | `mo_07.wav` | **mo** | **-2930.42** | -4304.28 | -4264.33 | -4782.79 | -4361.41 | **MO** | **+1333.91** |
 | `dong_07.wav` | **dong** | -3847.66 | **-2594.88** | -4152.39 | -4022.75 | -3765.34 | **DONG** | **+1170.46** |
 | `len_07.wav` | **len** | -4173.00 | -4555.11 | **-2503.68** | -4483.51 | -3946.47 | **LEN** | **+1442.79** |
 
-**Phân tích Margin:** Khoảng cách log-likelihood giữa mô hình đúng (Top-1) và mô hình cạnh tranh mạnh nhất (Top-2) rất lớn ($\Delta > 1100$), chứng tỏ mô hình HMM có độ tin cậy và khả năng phân tách ranh giới lớp vượt trội.
+**Phân tích Margin:** Khoảng cách log-likelihood giữa mô hình đúng (Top-1) và mô hình cạnh tranh mạnh nhất (Top-2) rất lớn (Δ > 1100), chứng tỏ mô hình HMM có độ tin cậy và khả năng phân tách ranh giới lớp vượt trội.
 
 ### 4.4. Đánh giá Hiệu năng Nhận dạng trên Tập Test Sạch
 Trên tập kiểm thử sạch 10 mẫu độc lập (2 mẫu/lớp), hệ thống HMM đạt độ chính xác tuyệt đối:
@@ -271,10 +271,10 @@ Biểu đồ kết quả được lưu tại [fig6_exp_n_states.png](figures/fig
 ### 6.2. Thí nghiệm E2: Vai trò của Đặc trưng Động (13 MFCC tĩnh vs 39 MFCC động)
 Biểu đồ so sánh được lưu tại [fig7_exp_mfcc_vs_delta.png](figures/fig7_exp_mfcc_vs_delta.png):
 * 13 MFCC tĩnh: Accuracy = 100.0%.
-* 39 MFCC động (+$\Delta$, +$\Delta^2$): Accuracy = 100.0%.
+* 39 MFCC động (+Δ, +Δ²): Accuracy = 100.0%.
 
 **Phân tích chuyên sâu:**
-Mặc dù trên tập test sạch của 5 từ phân biệt rõ ràng cả hai đều đạt 100%, việc bổ sung đặc trưng động $\Delta$ và $\Delta^2$ làm tăng khoảng cách Margin giữa Top-1 và Top-2 thêm hơn **35%**, giúp mô hình có khả năng phân tách cực kỳ vững chắc khi gặp các từ có âm sắc tương tự nhau (như các cặp phụ âm có cùng vị trí cấu âm).
+Mặc dù trên tập test sạch của 5 từ phân biệt rõ ràng cả hai đều đạt 100%, việc bổ sung đặc trưng động Δ và Δ² làm tăng khoảng cách Margin giữa Top-1 và Top-2 thêm hơn **35%**, giúp mô hình có khả năng phân tách cực kỳ vững chắc khi gặp các từ có âm sắc tương tự nhau (như các cặp phụ âm có cùng vị trí cấu âm).
 
 ### 6.3. Thí nghiệm E3: So sánh Ma trận Hiệp phương sai Diagonal vs Full Covariance
 Biểu đồ so sánh được lưu tại [fig8_exp_covariance_type.png](figures/fig8_exp_covariance_type.png):
@@ -379,7 +379,7 @@ Với $D = 39$ chiều và $N = 5$ trạng thái:
 Khi kích thước dữ liệu huấn luyện nhỏ, số frame quan sát không đủ để ước lượng ma trận hiệp phương sai 3900 tham số, dẫn đến overfitting nghiêm trọng và ma trận suy biến. Hơn nữa, phép biến đổi DCT trong MFCC đã có tác dụng làm mất tương quan mạnh giữa các chiều, giúp giả thiết ma trận đường chéo xấp xỉ rất tốt thực tế.
 
 #### Câu 5: Vì sao delta features hữu ích dù HMM đã mô hình hóa chuỗi theo thời gian?
-HMM chuẩn tuân theo giả thiết độc lập quan sát có điều kiện: $P(x_t \mid q_t, x_{t-1}, \dots) = P(x_t \mid q_t)$, nghĩa là các frame kế tiếp trong cùng một trạng thái được xem là hoàn toàn độc lập với nhau. Tuy nhiên, tiếng nói thực tế có tính liên tục rất cao do quán tính vật lý của bộ máy phát âm. Việc bổ sung $\Delta$ (vận tốc) và $\Delta^2$ (gia tốc) trực tiếp mã hóa xu hướng biến thiên phổ vào trong vector đặc trưng của từng frame, giúp bù đắp sự thiếu hụt của giả thiết độc lập quan sát mà không làm tăng độ phức tạp của mô hình Markov.
+HMM chuẩn tuân theo giả thiết độc lập quan sát có điều kiện: $P(x_t \mid q_t, x_{t-1}, \dots) = P(x_t \mid q_t)$, nghĩa là các frame kế tiếp trong cùng một trạng thái được xem là hoàn toàn độc lập với nhau. Tuy nhiên, tiếng nói thực tế có tính liên tục rất cao do quán tính vật lý của bộ máy phát âm. Việc bổ sung Δ (vận tốc) và Δ² (gia tốc) trực tiếp mã hóa xu hướng biến thiên phổ vào trong vector đặc trưng của từng frame, giúp bù đắp sự thiếu hụt của giả thiết độc lập quan sát mà không làm tăng độ phức tạp của mô hình Markov.
 
 #### Câu 6: Whole-word HMM không cần lexicon trong trường hợp nào? Khi nào lexicon trở thành bắt buộc?
 * **Không cần lexicon:** Khi bài toán là nhận dạng tập lệnh tách rời với từ vựng nhỏ cố định (như 5 lệnh trong bài Lab này). Khi đó mỗi từ được xem là một đơn vị độc lập và được mô hình hóa trực tiếp bằng một mô hình Whole-word HMM riêng biệt.
@@ -422,6 +422,6 @@ $$
 ## 8. KẾT LUẬN
 
 Bài thực hành số 3 đã hoàn thành toàn diện 100% các yêu cầu lý thuyết và thực hành của học phần CSE457:
-1. Xây dựng hoàn chỉnh pipeline nhận dạng tiếng nói tự động từ trích xuất đặc trưng 39 chiều động (MFCC + $\Delta$ + $\Delta^2$ + CMVN) đến mô hình hóa chuỗi xác suất bằng Left-to-Right Gaussian HMM.
+1. Xây dựng hoàn chỉnh pipeline nhận dạng tiếng nói tự động từ trích xuất đặc trưng 39 chiều động (MFCC + Δ + Δ² + CMVN) đến mô hình hóa chuỗi xác suất bằng Left-to-Right Gaussian HMM.
 2. Chứng minh vượt trội của HMM so với DTW về mặt suy luận thời gian thực: HMM có độ trễ nhỏ hơn **64.5 lần** ($6.42\text{ ms}$ so với $413.82\text{ ms}$), kích thước lưu trữ mô hình nhỏ gọn và có cơ sở lý thuyết xác suất vững chắc để mở rộng sang các hệ thống nhận dạng tiếng nói lớn (LVCSR).
 3. Triển khai và chứng minh tính khả thi của các thành phần mở rộng: Lexicon phiên âm, Mô hình ngôn ngữ Bigram có làm mịn Add-k, giải mã MAP Re-ranking và cơ chế từ chối từ lạ Out-of-Vocabulary.
