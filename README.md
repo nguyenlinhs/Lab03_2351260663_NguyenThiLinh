@@ -87,9 +87,9 @@ jupyter notebook Lab03.ipynb
    - **DTW:** **413.82 ms / mẫu**.
    - *HMM nhanh gấp **64.5 lần** so với DTW nhờ cấu trúc Forward/Viterbi ma trận nhỏ gọn.*
 3. **Thí nghiệm Bắt buộc:**
-   - **E1 (Số trạng thái):** $n\_states = 5$ là cấu hình tối ưu nhất cho cấu trúc ngữ âm từ đơn tiếng Việt.
-   - **E2 (Đặc trưng động):** MFCC 39 chiều (+$\Delta$, +$\Delta^2$) giúp tăng khoảng cách Margin giữa Top-1 và Top-2 thêm hơn 35%.
+   - **E1 (Số trạng thái):** `n_states = 5` là cấu hình tối ưu nhất cho cấu trúc ngữ âm từ đơn tiếng Việt.
+   - **E2 (Đặc trưng động):** MFCC 39 chiều (+Δ, +Δ²) giúp tăng khoảng cách Margin giữa Top-1 và Top-2 thêm hơn 35%.
    - **E3 (Covariance type):** Diagonal Covariance (195 tham số) ổn định và chống quá khớp vượt trội so với Full Covariance (3900 tham số).
    - **E5 (Mismatch):** Giữ vững 100% khi đổi người nói; giảm xuống 60% khi gặp nhiễu nền SNR 12dB.
-   - **E6 (LM & MAP Re-ranking):** Tích hợp thành công Bigram LM có làm mịn Add-k ($k=0.5$).
+   - **E6 (LM & MAP Re-ranking):** Tích hợp thành công Bigram LM có làm mịn Add-k ($k = 0.5$).
    - **Mở rộng (OOV Rejection):** Xác định ngưỡng tối ưu $\theta_{\text{reject}} = -71.18$ để từ chối các từ lạ ngoài từ vựng.

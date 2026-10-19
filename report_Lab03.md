@@ -76,28 +76,51 @@ Mục tiêu chính bao gồm:
 
 ### 3.1. Đặc trưng MFCC Động 39 Chiều
 Từ tín hiệu âm thanh đã cắt khoảng lặng và qua bộ lọc tiền nhấn ($y[n] = x[n] - 0.97 x[n-1]$), ta chia khung Hamming $25\text{ ms}$, bước nhảy $10\text{ ms}$ và trích xuất 13 hệ số MFCC tĩnh:
-$$c_t = [c_{t, 0}, c_{t, 1}, \dots, c_{t, 12}]^T \in \mathbb{R}^{13}$$
 
-Đặc trưng vận tốc (Delta) và gia tốc (Delta-Delta) được xấp xỉ qua sai phân bậc 1 và bậc 2:
-$$\Delta c_t \approx c_{t+1} - c_{t-1} \quad (\text{hoặc quy hồi } M \text{ frame})$$
-$$\Delta^2 c_t \approx \Delta c_{t+1} - \Delta c_{t-1}$$
+$$
+c_t = [c_{t, 0}, c_{t, 1}, \dots, c_{t, 12}]^T \in \mathbb{R}^{13}
+$$
+
+Đặc trưng vận tốc ($\Delta$) và gia tốc ($\Delta^2$) được xấp xỉ qua sai phân bậc 1 và bậc 2 (hoặc hồi quy qua $M$ frame):
+
+$$
+\Delta c_t \approx c_{t+1} - c_{t-1}
+$$
+
+$$
+\Delta^2 c_t \approx \Delta c_{t+1} - \Delta c_{t-1}
+$$
 
 Vector quan sát tại thời điểm $t$ là sự ghép nối 39 chiều:
-$$x_t = \begin{bmatrix} c_t \\ \Delta c_t \\ \Delta^2 c_t \end{bmatrix} \in \mathbb{R}^{39}$$
+
+$$
+x_t = \begin{bmatrix} c_t \\ \Delta c_t \\ \Delta^2 c_t \end{bmatrix} \in \mathbb{R}^{39}
+$$
 
 Sau đó, áp dụng chuẩn hóa trung bình và phương sai trên từng utterance (Utterance-level CMVN):
-$$\hat{x}_{t, d} = \frac{x_{t, d} - \mu_d}{\sigma_d + 10^{-8}}, \quad d = 1, \dots, 39$$
 
-### 3.2. Cấu trúc Mô hình HMM Trái - Sang - Phải ($\lambda = (A, B, \pi)$)
+$$
+\hat{x}_{t, d} = \frac{x_{t, d} - \mu_d}{\sigma_d + 10^{-8}}, \quad d = 1, \dots, 39
+$$
+
+### 3.2. Cấu trúc Mô hình HMM Trái - Sang - Phải (λ = (A, B, π))
 HMM là mô hình hai tầng ngẫu nhiên: chuỗi trạng thái ẩn $Q = (q_1, q_2, \dots, q_T)$ tuân theo xích Markov bậc 1 và chuỗi vector quan sát $X = (x_1, x_2, \dots, x_T)$ được sinh ra bởi các phân bố phát xạ tại mỗi trạng thái:
 1. **Xác suất khởi tạo:** $\pi_i = P(q_1 = i)$. Vì là cấu trúc Left-to-Right, ta gán:
-   $$\pi = [1.0, 0, 0, \dots, 0]^T$$
+
+   $$
+   \pi = [1.0, 0, 0, \dots, 0]^T
+   $$
+
 2. **Ma trận chuyển trạng thái:** $A = \{a_{ij}\}$ với $a_{ij} = P(q_t = j \mid q_{t-1} = i)$.
    - Ràng buộc Left-to-Right (Bakis Model): Chỉ cho phép tự lặp (self-loop) $a_{ii} \approx 0.7$ và chuyển tiếp sang trạng thái kế tiếp $a_{i, i+1} \approx 0.3$.
    - Cấm chuyển lùi ($a_{ij} = 0, \forall j < i$) và cấm nhảy cóc ($a_{ij} = 0, \forall j > i+1$).
    - Trạng thái cuối cùng là trạng thái hấp thụ: $a_{N, N} = 1.0$.
 3. **Phân bố phát xạ Gaussian (Gaussian Emission):** Mỗi trạng thái $i$ sở hữu 1 phân bố chuẩn đa biến:
-   $$b_i(x_t) = \mathcal{N}(x_t; \mu_i, \Sigma_i) = \frac{1}{(2\pi)^{D/2} |\Sigma_i|^{1/2}} \exp\left( -\frac{1}{2} (x_t - \mu_i)^T \Sigma_i^{-1} (x_t - \mu_i) \right)$$
+
+   $$
+   b_i(x_t) = \mathcal{N}(x_t; \mu_i, \Sigma_i) = \frac{1}{(2\pi)^{D/2} |\Sigma_i|^{1/2}} \exp\left( -\frac{1}{2} (x_t - \mu_i)^T \Sigma_i^{-1} (x_t - \mu_i) \right)
+   $$
+
    Với $D = 39$. Trong bài Lab, ma trận hiệp phương sai $\Sigma_i$ là ma trận đường chéo (`covariance_type="diag"`), nghĩa là chỉ lưu 39 giá trị phương sai $\sigma_{i, d}^2$.
 
 ### 3.3. Thuật toán Baum-Welch (Huấn luyện Mô hình EM)
@@ -106,20 +129,44 @@ Thuật toán Forward-Backward lặp lại hai bước:
   - Forward variable $\alpha_t(j) = P(x_1, \dots, x_t, q_t = j \mid \lambda)$.
   - Backward variable $\beta_t(i) = P(x_{t+1}, \dots, x_T \mid q_t = i, \lambda)$.
   - Mức chịu trách nhiệm (occupancy probability):
-    $$\gamma_t(i) = P(q_t = i \mid X, \lambda) = \frac{\alpha_t(i) \beta_t(i)}{P(X \mid \lambda)}$$
+
+    $$
+    \gamma_t(i) = P(q_t = i \mid X, \lambda) = \frac{\alpha_t(i) \beta_t(i)}{P(X \mid \lambda)}
+    $$
+
   - Xác suất chuyển trạng thái tại thời điểm $t$:
-    $$\xi_t(i, j) = P(q_t = i, q_{t+1} = j \mid X, \lambda) = \frac{\alpha_t(i) a_{ij} b_j(x_{t+1}) \beta_{t+1}(j)}{P(X \mid \lambda)}$$
+
+    $$
+    \xi_t(i, j) = P(q_t = i, q_{t+1} = j \mid X, \lambda) = \frac{\alpha_t(i) a_{ij} b_j(x_{t+1}) \beta_{t+1}(j)}{P(X \mid \lambda)}
+    $$
+
 - **Bước M (Maximization):** Cập nhật tham số mô hình mới:
-  $$a_{ij}^{(\text{new})} = \frac{\sum_{t=1}^{T-1} \xi_t(i, j)}{\sum_{t=1}^{T-1} \gamma_t(i)}$$
-  $$\mu_i^{(\text{new})} = \frac{\sum_{t=1}^T \gamma_t(i) x_t}{\sum_{t=1}^T \gamma_t(i)}$$
-  $$\Sigma_i^{(\text{new})} = \frac{\sum_{t=1}^T \gamma_t(i) (x_t - \mu_i^{(\text{new})})(x_t - \mu_i^{(\text{new})})^T}{\sum_{t=1}^T \gamma_t(i)}$$
+
+  $$
+  a_{ij}^{(\text{new})} = \frac{\sum_{t=1}^{T-1} \xi_t(i, j)}{\sum_{t=1}^{T-1} \gamma_t(i)}
+  $$
+
+  $$
+  \mu_i^{(\text{new})} = \frac{\sum_{t=1}^T \gamma_t(i) x_t}{\sum_{t=1}^T \gamma_t(i)}
+  $$
+
+  $$
+  \Sigma_i^{(\text{new})} = \frac{\sum_{t=1}^T \gamma_t(i) (x_t - \mu_i^{(\text{new})})(x_t - \mu_i^{(\text{new})})^T}{\sum_{t=1}^T \gamma_t(i)}
+  $$
 
 ### 3.4. Thuật toán Giải mã Viterbi
 Tìm chuỗi trạng thái ẩn $Q^* = (q_1^*, \dots, q_T^*)$ tối ưu nhất:
 - **Khởi tạo:** $\delta_1(j) = \pi_j b_j(x_1)$, $\psi_1(j) = 0$.
 - **Đệ quy (trong miền log):**
-  $$\delta_t(j) = \max_{1 \le i \le N} \left[ \delta_{t-1}(i) \cdot a_{ij} \right] \cdot b_j(x_t)$$
-  $$\psi_t(j) = \arg\max_{1 \le i \le N} \left[ \delta_{t-1}(i) \cdot a_{ij} \right]$$
+
+  $$
+  \delta_t(j) = \max_{1 \le i \le N} \left[ \delta_{t-1}(i) \cdot a_{ij} \right] \cdot b_j(x_t)
+  $$
+
+  $$
+  \psi_t(j) = \arg\max_{1 \le i \le N} \left[ \delta_{t-1}(i) \cdot a_{ij} \right]
+  $$
+
 - **Truy vết (Backtracking):** $q_T^* = \arg\max_i \delta_T(i)$, và $q_t^* = \psi_{t+1}(q_{t+1}^*)$.
 
 ---
@@ -135,10 +182,30 @@ Hình ảnh phân tích đặc trưng 39 chiều của từ `mở` và `đóng` 
 Tất cả 5 mô hình Whole-word HMM (5 trạng thái, hiệp phương sai đường chéo) đều hội tụ ổn định sau 15 – 46 vòng lặp Baum-Welch.
 
 Ma trận chuyển trạng thái thực nghiệm sau khi hội tụ:
+
 * **Model `mo`:**
-  $$\begin{bmatrix} 0.872 & 0.128 & 0 & 0 & 0 \\ 0 & 0.891 & 0.109 & 0 & 0 \\ 0 & 0 & 0.922 & 0.078 & 0 \\ 0 & 0 & 0 & 0.956 & 0.044 \\ 0 & 0 & 0 & 0 & 1.0 \end{bmatrix}$$
+
+  $$
+  A_{\text{mo}} = \begin{bmatrix} 
+  0.872 & 0.128 & 0 & 0 & 0 \\ 
+  0 & 0.891 & 0.109 & 0 & 0 \\ 
+  0 & 0 & 0.922 & 0.078 & 0 \\ 
+  0 & 0 & 0 & 0.956 & 0.044 \\ 
+  0 & 0 & 0 & 0 & 1.0 
+  \end{bmatrix}
+  $$
+
 * **Model `dong`:**
-  $$\begin{bmatrix} 0.895 & 0.105 & 0 & 0 & 0 \\ 0 & 0.928 & 0.072 & 0 & 0 \\ 0 & 0 & 0.889 & 0.111 & 0 \\ 0 & 0 & 0 & 0.927 & 0.073 \\ 0 & 0 & 0 & 0 & 1.0 \end{bmatrix}$$
+
+  $$
+  A_{\text{dong}} = \begin{bmatrix} 
+  0.895 & 0.105 & 0 & 0 & 0 \\ 
+  0 & 0.928 & 0.072 & 0 & 0 \\ 
+  0 & 0 & 0.889 & 0.111 & 0 \\ 
+  0 & 0 & 0 & 0.927 & 0.073 \\ 
+  0 & 0 & 0 & 0 & 1.0 
+  \end{bmatrix}
+  $$
 
 **Nhận xét về ma trận chuyển trạng thái:**
 1. Ràng buộc Left-to-Right được duy trì tuyệt đối: các phần tử ở tam giác dưới ($j < i$) và các bước nhảy cách trạng thái ($j > i+1$) luôn bằng $0.000$.
@@ -188,15 +255,15 @@ Biểu đồ so sánh trực quan được lưu tại [fig5_dtw_vs_hmm_compariso
 
 ## 6. BÁO CÁO KẾT QUẢ CÁC THÍ NGHIỆM BẮT BUỘC (E1 ĐẾN E6)
 
-### 6.1. Thí nghiệm E1: Khảo sát Số lượng Trạng thái ($n\_states \in \{3, 5, 7\}$)
+### 6.1. Thí nghiệm E1: Khảo sát Số lượng Trạng thái (n_states ∈ {3, 5, 7})
 Biểu đồ kết quả được lưu tại [fig6_exp_n_states.png](figures/fig6_exp_n_states.png):
-* $n\_states = 3$: Accuracy = 100.0%, Avg Train Log-Likelihood/frame = -46.426.
-* $n\_states = 5$: Accuracy = 100.0%, Avg Train Log-Likelihood/frame = -40.500.
-* $n\_states = 7$: Accuracy = 100.0%, Avg Train Log-Likelihood/frame = -37.028.
+* `n_states = 3`: Accuracy = 100.0%, Avg Train Log-Likelihood/frame = -46.426.
+* `n_states = 5`: Accuracy = 100.0%, Avg Train Log-Likelihood/frame = -40.500.
+* `n_states = 7`: Accuracy = 100.0%, Avg Train Log-Likelihood/frame = -37.028.
 
 **Phân tích chuyên sâu:**
 - Khi số trạng thái tăng từ 3 lên 7, Log-Likelihood/frame trên tập train tăng dần (từ -46.426 lên -37.028) do mô hình có nhiều tham số tự do hơn để khớp dữ liệu.
-- Tuy nhiên, với từ đơn tiếng Việt có độ dài trung bình $50 - 70\text{ frames}$, cấu trúc **$n\_states = 5$** là tối ưu nhất về mặt ngữ âm học (tương ứng với: Âm đầu $\to$ Chuyển tiếp $\to$ Âm chính $\to$ Chuyển tiếp $\to$ Âm cuối). Nếu chọn $n\_states \ge 7$ trên tập dữ liệu nhỏ sẽ dẫn đến nguy cơ quá khớp (overfitting) và một số trạng thái có thể bị thiếu frame quan sát.
+- Tuy nhiên, với từ đơn tiếng Việt có độ dài trung bình $50 - 70\text{ frames}$, cấu trúc **`n_states = 5`** là tối ưu nhất về mặt ngữ âm học (tương ứng với: Âm đầu $\to$ Chuyển tiếp $\to$ Âm chính $\to$ Chuyển tiếp $\to$ Âm cuối). Nếu chọn `n_states >= 7` trên tập dữ liệu nhỏ sẽ dẫn đến nguy cơ quá khớp (overfitting) và một số trạng thái có thể bị thiếu frame quan sát.
 
 ### 6.2. Thí nghiệm E2: Vai trò của Đặc trưng Động (13 MFCC tĩnh vs 39 MFCC động)
 Biểu đồ so sánh được lưu tại [fig7_exp_mfcc_vs_delta.png](figures/fig7_exp_mfcc_vs_delta.png):
@@ -235,28 +302,38 @@ Biểu đồ đánh giá độ bền vững được lưu tại [fig9_exp_mismat
   dung   d u ng
   ```
 * **Mô hình Bigram với Add-k Smoothing ($k = 0.5$):**
-  $$P(w_{\text{cur}} \mid w_{\text{prev}}) = \frac{C(w_{\text{prev}}, w_{\text{cur}}) + k}{C(w_{\text{prev}}) + k \cdot V}$$
+
+  $$
+  P(w_{\text{cur}} \mid w_{\text{prev}}) = \frac{C(w_{\text{prev}}, w_{\text{cur}}) + k}{C(w_{\text{prev}}) + k \cdot V}
+  $$
+
 * **Quy tắc MAP Re-ranking:**
-  $$\text{Score}(w) = \frac{1}{T} \log P_A(X \mid \lambda_w) + \lambda_{LM} \log P_L(w \mid w_{\text{prev}})$$
 
-Thực nghiệm re-ranking mẫu âm thanh `dong_07.wav` khi từ đi trước là $w_{\text{prev}} = \text{'mo'}$ (theo ngữ cảnh thiết bị, lệnh "mở" thường đi kèm với "lên" hoặc "đóng"):
-* Khi $\lambda_{LM} = 0.0$ (chỉ dùng âm học): Dự đoán **DONG** (Score = -44.74).
-* Khi $\lambda_{LM} = 0.1$: Dự đoán **DONG** (Score = -44.95).
-* Khi $\lambda_{LM} = 0.3$: Dự đoán **DONG** (Score = -45.38).
-* Khi $\lambda_{LM} = 1.0$: Dự đoán **DONG** (Score = -46.86).
-* Khi $\lambda_{LM} = 2.5$: Dự đoán **DONG** (Score = -50.04).
+  $$
+  \text{Score}(w) = \frac{1}{T} \log P_A(X \mid \lambda_w) + \lambda_{\text{LM}} \log P_L(w \mid w_{\text{prev}})
+  $$
 
-Biểu đồ biến thiên điểm MAP theo trọng số $\lambda_{LM}$ được lưu tại [fig10_exp_lm_reranking.png](figures/fig10_exp_lm_reranking.png).
+Thực nghiệm re-ranking mẫu âm thanh `dong_07.wav` khi từ đi trước là $w_{\text{prev}} = \text{"mo"}$ (theo ngữ cảnh thiết bị, lệnh "mở" thường đi kèm với "lên" hoặc "đóng"):
+* Khi $\lambda_{\text{LM}} = 0.0$ (chỉ dùng âm học): Dự đoán **DONG** (Score = -44.74).
+* Khi $\lambda_{\text{LM}} = 0.1$: Dự đoán **DONG** (Score = -44.95).
+* Khi $\lambda_{\text{LM}} = 0.3$: Dự đoán **DONG** (Score = -45.38).
+* Khi $\lambda_{\text{LM}} = 1.0$: Dự đoán **DONG** (Score = -46.86).
+* Khi $\lambda_{\text{LM}} = 2.5$: Dự đoán **DONG** (Score = -50.04).
 
-**Nhận xét:** Khi bằng chứng âm học đủ mạnh, điểm âm học áp đảo và mô hình nhận dạng chính xác. Tuy nhiên, nếu đặt $\lambda_{LM}$ quá lớn trong trường hợp âm học bị nhiễu hoặc điểm số giữa hai từ cạnh tranh sít sao, mô hình ngôn ngữ có thể lấn át bằng chứng âm học và ép hệ thống chọn từ có tần suất xuất hiện cao trong corpus dù phát âm thực tế là từ khác.
+Biểu đồ biến thiên điểm MAP theo trọng số $\lambda_{\text{LM}}$ được lưu tại [fig10_exp_lm_reranking.png](figures/fig10_exp_lm_reranking.png).
+
+**Nhận xét:** Khi bằng chứng âm học đủ mạnh, điểm âm học áp đảo và mô hình nhận dạng chính xác. Tuy nhiên, nếu đặt $\lambda_{\text{LM}}$ quá lớn trong trường hợp âm học bị nhiễu hoặc điểm số giữa hai từ cạnh tranh sít sao, mô hình ngôn ngữ có thể lấn át bằng chứng âm học và ép hệ thống chọn từ có tần suất xuất hiện cao trong corpus dù phát âm thực tế là từ khác.
 
 ### 6.6. Thí nghiệm Mở rộng: Phân bố Score và Cơ chế Từ chối Từ lạ (OOV Rejection)
 Biểu đồ phân bố mật độ xác suất chuẩn hóa trên mỗi frame $\frac{\log P(X \mid \lambda)}{T}$ được lưu tại [fig11_score_distribution_rejection.png](figures/fig11_score_distribution_rejection.png):
 * **Phân bố Đúng lớp (In-class):** Tập trung trong khoảng $[-48, -40]$.
 * **Phân bố Sai lớp / Ngoài tập (Off-class / Unknown):** Tập trung trong khoảng $[-95, -65]$.
 * **Ngưỡng từ chối tối ưu đề xuất:** $\theta_{\text{reject}} = -71.18$.
-* **Quy tắc quyết định:**
-  $$\text{Nếu } \max_{w \in \mathcal{V}} \frac{\log P(X \mid \lambda_w)}{T} < -71.18 \implies \text{Kết luận: "UNKNOWN" (Từ chối)}$$
+* **Quy tắc quyết định (Từ chối nếu điểm số chuẩn hóa dưới ngưỡng):**
+
+  $$
+  \max_{w \in \mathcal{V}} \frac{\log P(X \mid \lambda_w)}{T} < \theta_{\text{reject}} = -71.18 \implies \text{UNKNOWN}
+  $$
 
 ---
 
@@ -265,14 +342,22 @@ Biểu đồ phân bố mật độ xác suất chuẩn hóa trên mỗi frame $
 #### Câu 1: Forward và Viterbi khác nhau ở phép toán nào và trả lời hai câu hỏi khác nhau ra sao?
 * **Khác nhau ở phép toán:**
   - Thuật toán **Forward** sử dụng phép **cộng ($\sum$)**: cộng dồn xác suất của tất cả các đường đi có thể dẫn đến trạng thái $j$ tại thời điểm $t$:
-    $$\alpha_t(j) = b_j(x_t) \sum_{i=1}^N \alpha_{t-1}(i) a_{ij}$$
+
+    $$
+    \alpha_t(j) = b_j(x_t) \sum_{i=1}^N \alpha_{t-1}(i) a_{ij}
+    $$
+
   - Thuật toán **Viterbi** sử dụng phép **lấy cực đại ($\max$)**: chỉ chọn và ghi nhớ một đường đi đơn lẻ tốt nhất đi vào trạng thái $j$ tại thời điểm $t$:
-    $$\delta_t(j) = b_j(x_t) \max_{1 \le i \le N} \left[ \delta_{t-1}(i) a_{ij} \right]$$
+
+    $$
+    \delta_t(j) = b_j(x_t) \max_{1 \le i \le N} \left[ \delta_{t-1}(i) a_{ij} \right]
+    $$
+
 * **Khác nhau về câu hỏi trả lời:**
   - Forward trả lời câu hỏi: *"Tổng xác suất để mô hình $\lambda$ sinh ra toàn bộ chuỗi quan sát $X$ là bao nhiêu?"* ($P(X \mid \lambda)$ – dùng để so sánh điểm số nhận dạng giữa các mô hình từ).
   - Viterbi trả lời câu hỏi: *"Chuỗi trạng thái ẩn cụ thể nào $Q^* = (q_1^*, \dots, q_T^*)$ có xác suất cao nhất đã sinh ra chuỗi quan sát $X$?"* ($Q^* = \arg\max_Q P(X, Q \mid \lambda)$ – dùng để căn chỉnh thời gian và giải mã ngữ âm).
 
-#### Câu 2: Giải thích $\gamma_t(i)$ và $\xi_t(i, j)$ bằng ngôn ngữ "trách nhiệm" trong EM.
+#### Câu 2: Giải thích γ_t(i) và ξ_t(i, j) bằng ngôn ngữ "trách nhiệm" trong EM
 * $\gamma_t(i) = P(q_t = i \mid X, \lambda)$: Là mức độ "trách nhiệm" của trạng thái $i$ đối với frame quan sát $x_t$. Trong bước M-step, giá trị trung bình $\mu_i$ mới là trung bình có trọng số của toàn bộ các frame $x_t$, trong đó trọng số chính là mức độ chịu trách nhiệm $\gamma_t(i)$ của trạng thái $i$ đối với frame đó.
 * $\xi_t(i, j) = P(q_t = i, q_{t+1} = j \mid X, \lambda)$: Là mức độ "trách nhiệm" của bước chuyển tiếp từ trạng thái $i$ sang trạng thái $j$ tại thời điểm $t \to t+1$. Tổng mức trách nhiệm này qua toàn bộ thời gian chia cho tổng trách nhiệm của trạng thái $i$ chính là xác suất chuyển tiếp mới $a_{ij}$.
 
@@ -299,9 +384,13 @@ HMM chuẩn tuân theo giả thiết độc lập quan sát có điều kiện: 
 #### Câu 7: Nếu test utterance dài hơn do nói chậm, self-loop của HMM giúp gì?
 Xác suất tự lặp (self-loop) $a_{ii}$ cho phép mô hình tiếp tục duy trì ở trạng thái hiện tại $i$ qua nhiều frame quan sát liên tiếp. Khi người nói phát âm chậm hoặc ngân dài nguyên âm, số lượng frame tăng lên đáng kể; các self-loop sẽ tự động hấp thụ các frame kéo dài này mà không bắt buộc mô hình phải nhảy sớm sang các trạng thái tiếp theo, giúp mô hình hóa độ dài âm học (duration modeling) cực kỳ linh hoạt.
 
-#### Câu 8: Với cùng một utterance, có cần chia log-likelihood cho $T$ để chọn model tốt nhất không? Tại sao?
+#### Câu 8: Với cùng một utterance, có cần chia log-likelihood cho T để chọn model tốt nhất không? Tại sao?
 * **Không cần thiết khi so sánh nhận dạng:** Vì khi một mẫu âm thanh $X$ được đưa vào kiểm thử, độ dài chuỗi frame $T$ là hoàn toàn cố định đối với tất cả các mô hình ứng viên $\lambda_w$. Do đó, việc chia cho hằng số dương $T$ không làm thay đổi thứ tự so sánh (monotonic transformation):
-  $$\arg\max_w \left[ \frac{\log P(X \mid \lambda_w)}{T} \right] = \arg\max_w \log P(X \mid \lambda_w)$$
+
+  $$
+  \arg\max_w \left[ \frac{\log P(X \mid \lambda_w)}{T} \right] = \arg\max_w \log P(X \mid \lambda_w)
+  $$
+
 * **Tuy nhiên rất cần thiết khi:** Cần thiết lập ngưỡng từ chối (reject threshold) cho từ lạ hoặc so sánh độ tin cậy giữa các câu có độ dài khác nhau, vì chuỗi frame dài tự nhiên sẽ có tổng log-likelihood âm hơn chuỗi frame ngắn.
 
 #### Câu 9: So sánh warping path của DTW với state path của Viterbi.
@@ -312,10 +401,16 @@ Xác suất tự lặp (self-loop) $a_{ii}$ cho phép mô hình tiếp tục duy
 * **Nguyên nhân argmax vẫn chọn:** Hàm $\arg\max_{w \in \mathcal{V}} P(X \mid \lambda_w)$ hoạt động trên không gian đóng $\mathcal{V}$. Nó chỉ so sánh tương đối giữa các mô hình có sẵn trong từ điển và luôn bắt buộc phải trả về lớp có điểm số cao nhất trong số đó, ngay cả khi điểm số tuyệt đối của tất cả các mô hình đều cực kỳ thấp.
 * **Đề xuất tiêu chuẩn từ chối (Reject Criteria):**
   1. *Ngưỡng Normalized Log-Likelihood trên mỗi frame:*
-     $$\text{Nếu } \max_{w \in \mathcal{V}} \frac{\log P(X \mid \lambda_w)}{T} < \theta_{\text{reject}} \implies \text{Từ chối (Trả về "UNKNOWN")}$$
-     (Với bài thực hành này, giá trị tối ưu là $\theta_{\text{reject}} = -71.18$).
+
+     $$
+     \max_{w \in \mathcal{V}} \frac{\log P(X \mid \lambda_w)}{T} < \theta_{\text{reject}} = -71.18 \implies \text{UNKNOWN}
+     $$
+
   2. *Ngưỡng chênh lệch tin cậy giữa Top-1 và Top-2 (Confidence Margin):*
-     $$\text{Nếu } \frac{\text{Score}_{\text{top1}} - \text{Score}_{\text{top2}}}{T} < \Delta_{\text{margin}} \implies \text{Yêu cầu người dùng nói lại / Báo không rõ ràng}.$$
+
+     $$
+     \frac{\text{Score}_{\text{top1}} - \text{Score}_{\text{top2}}}{T} < \Delta_{\text{margin}} \implies \text{REJECT}
+     $$
 
 ---
 
